@@ -5,6 +5,8 @@ import Burger from '../../components/Burger/Burger';
 import BuildControls from '../../components/Burger/BuildControls/BuildControls';
 import Modal from '../../components/UI/Modal/Modal';
 import OrderSummary from '../../components/Burger/OrderSummary/OrderSummary';
+import Spinner from '../../components/UI/Spinner/Spinner';
+import axios from '../../axios-orders';
 
 //default global prices for the ingredients
 const INGREDIENT_PRICES = {
@@ -29,7 +31,8 @@ class BurgerBuilder extends Component {
 		},
 		totalPrice: 4,
 		purchasable: false,
-		purchasing: false
+		purchasing: false,
+		loading: false
 	}//end state
 
 	//	Checks the total number of ingredients in the burger
@@ -86,7 +89,31 @@ class BurgerBuilder extends Component {
 	}//end purchaseCancelHandler
 
 	purchaseContinueHandler = () => {
-		alert('You Continue!');
+		//alert('You Continue!');
+		this.setState({loading: true});
+		const order = {
+			ingredients: this.state.ingredients,
+			price: this.state.totalPrice,
+			customer: {
+				name: 'Bresia Prudente',
+				address: {
+					street: 'Test Street 1',
+					zipCode: '38573',
+					country: 'USA'
+				},
+				email: 'test@test.com'
+			},
+			deliveryMethod: 'fastest'
+		}
+		axios.post('/orders.json', order)
+			.then(response => {
+				this.setState({loading: false, purchasing: false});
+				// console.log(response);
+			})
+			.catch(error => {
+				this.setState({loading: false, purchasing: false});
+				// console.log(error);
+		});
 	}//end purchaseContinueHandler
 
 	render () {
@@ -96,6 +123,16 @@ class BurgerBuilder extends Component {
 		for (let key in disabledInfo) {
 			disabledInfo[key] = disabledInfo[key] <= 0
 		}
+
+		let orderSummary = <OrderSummary 
+			ingredients={this.state.ingredients}
+			price={this.state.totalPrice}
+			purchaseCancelled={this.purchaseCancelHandler}
+			purchaseContinued={this.purchaseContinueHandler} />
+		if (this.state.loading) {
+			orderSummary = <Spinner />
+		}
+
 		//	remember that the state at this point looks like
 		//	{salad: true, bacon: false}
 		//		* we want to turn the true state to false so that
@@ -103,11 +140,7 @@ class BurgerBuilder extends Component {
 		return (
 			<Aux>
 				<Modal show={this.state.purchasing} modalClosed={this.purchaseCancelHandler} >
-					<OrderSummary 
-						ingredients={this.state.ingredients}
-						price={this.state.totalPrice}
-						purchaseCancelled={this.purchaseCancelHandler}
-						purchaseContinued={this.purchaseContinueHandler} />
+					{orderSummary}
 				</Modal>
 				<Burger ingredients={this.state.ingredients} />
 				<BuildControls 
